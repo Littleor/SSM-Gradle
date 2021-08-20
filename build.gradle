@@ -1,0 +1,93 @@
+plugins {
+    id 'war'
+    id 'java'
+}
+
+group 'cn.littleor.SSM-Gradle'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework:spring-webmvc:5.3.9'
+    implementation 'org.springframework:spring-beans:5.3.9'
+    implementation 'org.springframework:spring-context:5.3.9'
+    implementation 'org.springframework:spring-context-support:5.3.9'
+    implementation 'org.springframework:spring-web:5.3.9'
+    implementation 'org.springframework:spring-tx:5.3.9'
+    implementation 'org.springframework:spring-jdbc:5.3.9'
+    implementation 'org.springframework:spring-test:5.3.9'
+    implementation 'org.mybatis:mybatis:3.5.7'
+    //mysql依赖
+    implementation 'mysql:mysql-connector-java:8.0.25'
+    //mybatis-spring整合
+    implementation 'org.mybatis:mybatis-spring:2.0.6'
+    implementation 'org.mybatis:mybatis-spring:2.0.6'
+    implementation 'com.alibaba:druid-spring-boot-starter:1.2.6'
+    implementation 'org.slf4j:slf4j-log4j12:1.7.32'
+    implementation 'log4j:log4j:1.2.17'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.4'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.4'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+configurations {
+    mybatisGenerator
+}
+dependencies {
+    //  mybatis-generator mybatis逆向
+    mybatisGenerator 'org.mybatis.generator:mybatis-generator-core:1.4.0'
+    mybatisGenerator 'mysql:mysql-connector-java:8.0.25'
+    mybatisGenerator 'tk.mybatis:mapper:4.1.5'
+}
+
+def getDbProperties = {
+    def properties = new Properties()
+    file("src/main/resources/jdbc_config.properties").withInputStream { inputStream ->
+        properties.load(inputStream)
+    }
+    properties
+} as Object
+
+task mybatisGenerator {
+    def properties = getDbProperties()
+    ant.properties['targetProject'] = projectDir.path
+    ant.properties['driverClass'] = properties.getProperty("jdbc.driverClassName")
+    ant.properties['connectionURL'] = properties.getProperty("jdbc.url")
+    ant.properties['userId'] = properties.getProperty("jdbc.username")
+    ant.properties['password'] = properties.getProperty("jdbc.password")
+    ant.properties['src_main_java'] = sourceSets.main.java.srcDirs[0].path
+    ant.properties['src_main_resources'] = sourceSets.main.resources.srcDirs[0].path
+    ant.properties['modelPackage'] = properties.getProperty("package.model")
+    ant.properties['mapperPackage'] = properties.getProperty("package.mapper")
+    ant.properties['sqlMapperPackage'] = properties.getProperty("package.xml")
+    ant.taskdef(
+            name: 'mbgenerator',
+            classname: 'org.mybatis.generator.ant.GeneratorAntTask',
+            classpath: configurations.mybatisGenerator.asPath
+    )
+    ant.mbgenerator(overwrite: true,
+            configfile: 'src/main/resources/generatorConfig.xml', verbose: true) {
+        propertyset {
+            propertyref(name: 'targetProject')
+            propertyref(name: 'userId')
+            propertyref(name: 'driverClass')
+            propertyref(name: 'connectionURL')
+            propertyref(name: 'password')
+            propertyref(name: 'src_main_java')
+            propertyref(name: 'src_main_resources')
+            propertyref(name: 'modelPackage')
+            propertyref(name: 'mapperPackage')
+            propertyref(name: 'sqlMapperPackage')
+        }
+    }
+}

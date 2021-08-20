@@ -1,0 +1,5 @@
+/src/main/resources/jdbc_config.properties
+/build/
+/out/
+/.gradle/
+/.idea
